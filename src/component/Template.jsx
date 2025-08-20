@@ -21,6 +21,8 @@ function Template() {
     const [cartItems, setCartItems] = useState(0);
     const [location, setLocation] = useState('Sacramento, 95829');
     const [isScrolled, setIsScrolled] = useState(false);
+    const [toast, setToast] = useState(null);
+    const [modalProduct, setModalProduct] = useState(null);
     const navigate = useNavigate();
     const { isLoggedIn, user, logout } = useAuth();
 
@@ -34,12 +36,21 @@ function Template() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Toast logic
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
+
     const handleSearch = () => {
         alert(`Searching for: ${searchText}`);
     };
 
     const addToCart = () => {
         setCartItems(prev => prev + 1);
+        setToast('Added to cart!');
     };
 
     const handleLogout = () => {
@@ -51,7 +62,7 @@ function Template() {
             navigate('/login');
             return;
         }
-        alert(`Proceeding to checkout for ${productName}`);
+        setToast(`Proceeding to checkout for ${productName}`);
     };
 
     const promotionalBlocks = [
@@ -153,6 +164,28 @@ function Template() {
 
     return (
         <div className="container">
+            {/* Toast Notification */}
+            {toast && (
+                <div className="toast">
+                    {toast}
+                </div>
+            )}
+
+            {/* Product Modal */}
+            {modalProduct && (
+                <div className="modal-overlay" onClick={() => setModalProduct(null)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h2>{modalProduct.title}</h2>
+                        <ul>
+                            {modalProduct.items.map((item, i) => (
+                                <li key={i}>{item}</li>
+                            ))}
+                        </ul>
+                        <button onClick={() => setModalProduct(null)}>Close</button>
+                    </div>
+                </div>
+            )}
+
             <div className={`header ${isScrolled ? 'scrolled' : ''}`}>
                 <div className="site-brand">
                     <img src={ecommerce} alt="WraithCart Logo" className="site-logo" />
@@ -199,6 +232,23 @@ function Template() {
                         <div className="cart-btn">
                             🛒 <span className="cart-amount">${(cartItems * 0).toFixed(2)}</span>
                         </div>
+                        <button
+                            className="admin-login-btn"
+                            onClick={() => navigate('/admin')}
+                            style={{
+                                marginLeft: '15px',
+                                background: '#222',
+                                color: '#fff',
+                                borderRadius: '8px',
+                                padding: '8px 18px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                transition: 'background 0.2s'
+                            }}
+                        >
+                            Admin Login
+                        </button>
                     </div>
                 </div>
 
@@ -220,6 +270,9 @@ function Template() {
                         key={index} 
                         className="promo-block"
                         style={{ '--index': index }}
+                        tabIndex={0}
+                        onClick={() => setModalProduct(block)}
+                        onKeyPress={e => { if (e.key === 'Enter') setModalProduct(block); }}
                     >
                         <div className="promo-header">
                             <div className="promo-content">
@@ -249,7 +302,12 @@ function Template() {
                         {block.badge && (
                             <span className="badge">{block.badge}</span>
                         )}
-                        <button className="shop-now">Shop now</button>
+                        <button
+                            className="shop-now"
+                            onClick={e => { e.stopPropagation(); setToast('Shop now clicked!'); }}
+                        >
+                            Shop now
+                        </button>
                     </div>
                 ))}
             </div>
